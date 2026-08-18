@@ -1,1 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>七夕快乐，我的宝 💕</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1a0a1e 0%, #2d1233 50%, #1a0a1e 100%);
+    display: flex; justify-content: center; align-items: center;
+    overflow: hidden; font-family: 'Georgia', 'STKaiti', 'KaiTi', serif;
+  }
 
+  /* 音乐按钮 */
+  .music-btn {
+    position: fixed; top: 20px; right: 20px; z-index: 200;
+    width: 40px; height: 40px; border-radius: 50%;
+    background: rgba(255,100,150,0.2); border: 1px solid rgba(255,150,180,0.4);
+    color: #f8c8dc; font-size: 20px; cursor: pointer;
+    display: flex; justify-content: center; align-items: center;
+    backdrop-filter: blur(6px); transition: all 0.3s;
+  }
+  .music-btn.playing { animation: spin 3s linear infinite; background: rgba(255,100,150,0.4); }
+  @keyframes spin { 100% { transform: rotate(360deg); } }
+
+  /* 飘落爱心 */
+  .hearts-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+  .heart { position: absolute; top: -40px; font-size: 20px; animation: fall linear infinite; opacity: 0.7; }
+  @keyframes fall { 0% { transform: translateY(0) rotate(0deg); opacity: 0.8; } 100% { transform: translateY(110vh) rotate(360deg); opacity: 0; } }
+
+  /* 烟花画布 */
+  #fireworksCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
+
+  /* 主界面跳动爱心 */
+  .main-wrapper { position: relative; z-index: 10; text-align: center; cursor: pointer; }
+  .title { color: #f8c8dc; font-size: 2.2rem; margin-bottom: 30px; text-shadow: 0 0 20px rgba(255,100,150,0.6); letter-spacing: 6px; animation: glow 2s ease-in-out infinite alternate; }
+  @keyframes glow { from { text-shadow: 0 0 10px rgba(255,100,150,0.4); } to { text-shadow: 0 0 30px rgba(255,100,150,0.9), 0 0 60px rgba(255,80,130,0.4); } }
+  
+  .heart-btn { font-size: 100px; animation: beat 1.2s ease-in-out infinite; transition: transform 0.3s; user-select: none; filter: drop-shadow(0 0 20px rgba(255,80,120,0.8)); }
+  .heart-btn:hover { transform: scale(1.15); }
+  @keyframes beat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.15); } 30% { transform: scale(1); } 45% { transform: scale(1.1); } }
+  
+  .hint { color: rgba(248,200,220,0.6); margin-top: 20px; font-size: 0.9rem; animation: blink 2s ease-in-out infinite; }
+  @keyframes blink { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+
+  /* 信件弹层 */
+  .letter-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10,5,15,0.85); z-index: 100; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.6s ease; overflow-y: auto; padding: 20px 0; }
+  .letter-overlay.open { opacity: 1; pointer-events: all; }
+  
+  .envelope { width: 90%; max-width: 520px; background: linear-gradient(180deg, #fff8f0 0%, #fff0e6 100%); border-radius: 8px; padding: 40px 35px; box-shadow: 0 0 40px rgba(255,100,150,0.3), 0 10px 30px rgba(0,0,0,0.4); transform: scale(0.7) rotateX(20deg); transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1); position: relative; border: 1px solid rgba(255,180,200,0.3); margin: auto; }
+  .letter-overlay.open .envelope { transform: scale(1) rotateX(0deg); }
+  .envelope::before { content: '💌'; position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 36px; }
+  
+  .letter-content { color: #4a2c3d; font-size: 1rem; line-height: 2; text-align: left; white-space: pre-line; opacity: 0; transition: opacity 0.8s ease 0.4s; }
+  .letter-overlay.open .letter-content { opacity: 1; }
+  
+  .letter-sign { text-align: right; margin-top: 20px; color: #c4567a; font-size: 1.05rem; font-weight: bold; }
+  .close-btn { position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 1.4rem; color: #c4567a; cursor: pointer; opacity: 0.6; transition: opacity 0.3s; z-index: 10; }
+  .close-btn:hover { opacity: 1; }
+
+  /* 视频触发按钮 */
+  .video-trigger { display: block; margin: 30px auto 0; padding: 12px 25px; background: linear-gradient(45deg, #ff6b9d, #ff4081); color: #fff; border: none; border-radius: 30px; font-size: 1rem; cursor: pointer; box-shadow: 0 4px 15px rgba(255,64,129,0.4); transition: all 0.3s; font-family: inherit; letter-spacing: 2px; animation: beat 1.2s ease-in-out infinite; }
+  .video-trigger:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,64,129,0.6); }
+
+  /* 视频弹窗 */
+  .video-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 300; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.4s; }
+  .video-modal.active { opacity: 1; pointer-events: all; }
+  .video-wrapper { position: relative; width: 90%; max-width: 600px; border-radius: 12px; overflow: hidden; box-shadow: 0 0 50px rgba(255,100,150,0.5); animation: video-glow 2s ease-in-out infinite alternate; }
+  @keyframes video-glow { from { box-shadow: 0 0 30px rgba(255,100,150,0.4); } to { box-shadow: 0 0 60px rgba(255,100,150,0.8); } }
+  .video-wrapper video { width: 100%; display: block; }
+  .close-video { position: absolute; top: -40px; right: 0; color: #fff; font-size: 2rem; cursor: pointer; background: none; border: none; opacity: 0.8; transition: opacity 0.3s; }
+  .close-video:hover { opacity: 1; }
+
+  /* 星星背景 */
+  .stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+  .star { position: absolute; width: 2px; height: 2px; background: #fff; border-radius: 50%; animation: twinkle 3s ease-in-out infinite alternate; }
+  @keyframes twinkle { from { opacity: 0.2; } to { opacity: 1; } }
+
+  /* 手机端适配 */
+  @media (max-width: 480px) { 
+    .title { font-size: 1.6rem; } 
+    .heart-btn { font-size: 80px; } 
+    .envelope { padding: 30px 22px; } 
+    .letter-content { font-size: 0.9rem; } 
+  }
+</style>
+</head>
+<body>
+
+<!-- 音乐控制 -->
+<button class="music-btn" id="musicBtn">🎵</button>
+<audio id="bgmAudio" loop><source src="bgm.mp3" type="audio/mpeg"></audio>
+
+<div class="stars" id="stars"></div>
+<div class="hearts-container" id="heartsContainer"></div>
+<canvas id="fireworksCanvas"></canvas>
+
+<!-- 主界面：跳动爱心 -->
+<div class="main-wrapper" id="mainWrapper">
+  <div class="title">✨ 七夕快乐 ✨</div>
+  <div class="heart-btn" id="heartBtn">💖</div>
+  <div class="hint">— 点击爱心，查收星星的信 —</div>
+</div>
+
+<!-- 信件弹层 -->
+<div class="letter-overlay" id="letterOverlay">
+  <div class="envelope">
+    <button class="close-btn" id="closeBtn">✕</button>
+    <div class="letter-content">💓致我最爱的女孩：
+
+谁说七夕只能属于情侣？在我们这里，七夕是属于我们神仙友谊的节日！
+
+谢谢你出现在我的生命里，做我的倾听者、我的开心果、我的“人间清醒”。我们一起吐槽过奇葩，一起分享过八卦，也一起度过了许多个需要彼此拥抱的瞬间。
+
+哪怕以后我们各自有了另一半，你在我心里的位置也永远无可替代。男人可能会惹我们生气，但你永远不会！
+
+愿我的宝，永远自由、永远漂亮、永远有钱花！就算全世界都催着你长大，在我这里，你永远可以做个快乐的小孩。
+
+七夕快乐！不管未来多远，我们都要一直一直在一起！💕</div>
+    <div class="letter-sign">永远爱你的星星💫
+2026年8月19日</div>
+    
+    <!-- 视频播放按钮 -->
+    <button class="video-trigger" id="playVideoBtn">💌 点击播放我们的回忆</button>
+  </div>
+</div>
+
+<!-- 视频播放弹窗 -->
+<div class="video-modal" id="videoModal">
+  <div class="video-wrapper">
+    <button class="close-video" id="closeVideoBtn">×</button>
+    <video id="loveVideo" controls playsinline>
+      <source src="video.mp4" type="video/mp4">
+      您的浏览器不支持视频播放
+    </video>
+  </div>
+</div>
+
+<script>
+  // ===== 音乐控制 =====
+  const musicBtn = document.getElementById('musicBtn');
+  const bgmAudio = document.getElementById('bgmAudio');
+  let isPlaying = false;
+  const playMusic = () => { bgmAudio.play().then(() => { isPlaying = true; musicBtn.classList.add('playing'); }).catch(() => {}); };
+  musicBtn.addEventListener('click', () => { if (isPlaying) { bgmAudio.pause(); isPlaying = false; musicBtn.classList.remove('playing'); } else { playMusic(); } });
+
+  // 🎉 七夕彩蛋：判断是否是 8月19日
+  const now = new Date();
+  const isQixiDay = (now.getMonth() === 7 && now.getDate() === 19);
+  if (isQixiDay) {
+    // 自动播放音乐
+    window.addEventListener('load', () => { playMusic(); });
+    // 如果浏览器拦截自动播放，用户点击屏幕任意位置也会播放
+    document.addEventListener('click', () => { if (!isPlaying) playMusic(); }, { once: true });
+  }
+
+  // ===== 星星背景 =====
+  const starsEl = document.getElementById('stars');
+  for (let i = 0; i < 80; i++) { const s = document.createElement('div'); s.className = 'star'; s.style.left = Math.random()*100+'%'; s.style.top = Math.random()*100+'%'; s.style.animationDelay = Math.random()*3+'s'; s.style.width = s.style.height = (Math.random()*2+1)+'px'; starsEl.appendChild(s); }
+
+  // ===== 飘落爱心 =====
+  const heartsContainer = document.getElementById('heartsContainer');
+  const heartEmojis = ['💕', '💗', '💖', '💓', '✨', '🩷', '♥'];
+  function createHeart() { const h = document.createElement('div'); h.className = 'heart'; h.textContent = heartEmojis[Math.floor(Math.random()*heartEmojis.length)]; h.style.left = Math.random()*100+'%'; h.style.fontSize = (Math.random()*16+12)+'px'; h.style.animationDuration = (Math.random()*4+5)+'s'; heartsContainer.appendChild(h); setTimeout(() => h.remove(), 10000); }
+  setInterval(createHeart, 400);
+
+  // ===== 烟花特效 =====
+  const canvas = document.getElementById('fireworksCanvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [], fireworksActive = false;
+  function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  resizeCanvas(); window.addEventListener('resize', resizeCanvas);
+  class Particle { constructor(x, y, color) { this.x = x; this.y = y; this.color = color; const a = Math.random()*Math.PI*2, sp = Math.random()*5+2; this.vx = Math.cos(a)*sp; this.vy = Math.sin(a)*sp; this.alpha = 1; this.decay = Math.random()*0.02+0.015; } update() { this.x += this.vx; this.y += this.vy; this.vy += 0.05; this.alpha -= this.decay; } draw() { ctx.save(); ctx.globalAlpha = this.alpha; ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x, this.y, 2, 0, Math.PI*2); ctx.fill(); ctx.restore(); } }
+  function createFirework() { const x = Math.random()*canvas.width, y = Math.random()*canvas.height*0.6, colors = ['#ff6b9d','#ffa3c4','#ff4081','#f8c8dc','#fff','#ffd700'], c = colors[Math.floor(Math.random()*colors.length)]; for(let i=0;i<60;i++) particles.push(new Particle(x,y,c)); }
+  function animateFireworks() { if (!fireworksActive && particles.length===0) return; ctx.clearRect(0,0,canvas.width,canvas.height); particles.forEach((p,i) => { p.update(); p.draw(); if(p.alpha<=0) particles.splice(i,1); }); requestAnimationFrame(animateFireworks); }
+  function startFireworks() { fireworksActive = true; animateFireworks(); let c=0; const iv = setInterval(()=>{ createFirework(); c++; if(c>20) clearInterval(iv); }, 300); setTimeout(()=>{ fireworksActive=false; }, 8000); }
+  
+  // 🎉 七夕彩蛋：如果是 8月19日，页面加载后自动放烟花
+  if (isQixiDay) { window.addEventListener('load', () => { startFireworks(); }); }
+
+  // ===== 信件打开 & 烟花触发 =====
+  const heartBtn = document.getElementById('heartBtn');
+  const overlay = document.getElementById('letterOverlay');
+  const closeBtn = document.getElementById('closeBtn');
+
+  heartBtn.addEventListener('click', () => { overlay.classList.add('open'); startFireworks(); });
+  closeBtn.addEventListener('click', () => { overlay.classList.remove('open'); });
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('open'); });
+
+  // ===== 视频弹窗控制 =====
+  const playVideoBtn = document.getElementById('playVideoBtn');
+  const videoModal = document.getElementById('videoModal');
+  const closeVideoBtn = document.getElementById('closeVideoBtn');
+  const loveVideo = document.getElementById('loveVideo');
+
+  playVideoBtn.addEventListener('click', () => {
+    videoModal.classList.add('active');
+    loveVideo.play();
+    // 播放视频时暂停背景音乐
+    if(isPlaying) { bgmAudio.pause(); }
+  });
+
+  closeVideoBtn.addEventListener('click', () => {
+    videoModal.classList.remove('active');
+    loveVideo.pause();
+    loveVideo.currentTime = 0; // 重置进度
+    // 关闭视频后恢复背景音乐
+    if(isPlaying) { bgmAudio.play(); }
+  });
+  
+  // 点击弹窗外部关闭视频
+  videoModal.addEventListener('click', (e) => {
+    if (e.target === videoModal) {
+      videoModal.classList.remove('active');
+      loveVideo.pause();
+      loveVideo.currentTime = 0;
+      if(isPlaying) { bgmAudio.play(); }
+    }
+  });
+</script>
+</body>
+</html>
